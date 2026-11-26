@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Zeiträume{% endblock %}
+{% block content %}
+<div class="pagehead">
+  <h1>Zeiträume</h1>
+  <a class="button primary" href="/admin/schedules/new">+ Neuer Zeitraum</a>
+</div>
+
+<section class="card now">
+  <strong>Jetzt ({{ now|dt }}):</strong>
+  {% if current.closed %}
+    <span class="badge closed">Schließzeit</span>
+    {% for b in current.blocks %}<span class="pill">{{ b.name }}{% if b.slides %} · {{ b.slides|length|bilder }}{% endif %}</span>{% endfor %}
+    {% if current.slides %}<span class="muted">alle anderen Zeiträume ausgeblendet</span>
+    {% else %}<span class="muted">ohne Bilder, der Bildschirm bleibt schwarz</span>{% endif %}
+  {% elif current.fallback %}
+    {% if current.slides %}Kein Zeitraum aktiv, das Standardbild wird gezeigt.
+    {% else %}Kein Zeitraum aktiv und kein Standardbild gesetzt, der Bildschirm bleibt schwarz.
+      <a href="/admin/pool">Standardbild wählen</a>{% endif %}
+  {% else %}
+    {% for b in current.blocks if b.slides %}<span class="pill">{{ b.name }} · {{ b.slides|length|bilder }}</span>{% endfor %}
+    <span class="muted">Durchlauf {{ current.total_seconds|mmss }}</span>
+  {% endif %}
+</section>
+
+{% if not items %}
+<p class="empty">Noch keine Zeiträume angelegt. Leg zuerst <a href="/admin/pool">Bilder im Pool</a> ab und dann einen <a href="/admin/schedules/new">Zeitraum</a>.</p>
+{% endif %}
+
+<div class="schedule-list">
+{% for it in items %}
+  {% set s = it.row %}
+  <article class="card schedule {{ 'disabled' if not s.enabled }} {{ 'active' if it.active }} {{ 'closure' if s.exclusive }}">
+    <div class="schedule-main">
+      <div class="schedule-title">
+        <span class="prio" title="Priorität: kleinere Zahl wird zuerst gezeigt">{{ s.priority }}</span>
+        <a href="/admin/schedules/{{ s.id }}"><strong>{{ s.name }}</strong></a>
+        {% if s.exclusive %}<span class="badge closed">Schließzeit</span>{% endif %}
+        {% if it.active %}<span class="badge live">läuft jetzt</span>{% endif %}
+        {% if not s.enabled %}<span class="badge">deaktiviert</span>{% endif %}
+      </div>
+      <div>{{ it.description }}</div>
+      {% if it.upcoming %}
+      <div class="muted small">Nächste: {% for d in it.upcoming %}{{ d|dt }}{{ ', ' if not loop.last }}{% endfor %}</div>
+      {% elif s.enabled %}
+      <div class="muted small">Keine weiteren Termine.</div>
+      {% endif %}
+      <div class="mini-thumbs">
+        {% for sl in it.slides[:8] %}<img src="{{ thumb_url(sl.filename) }}" alt="" loading="lazy">{% endfor %}
+        {% if it.slides|length > 8 %}<span class="muted">+{{ it.slides|length - 8 }}</span>{% endif %}
+        {% if not it.slides %}<span class="muted small">noch keine Bilder</span>{% endif %}
+      </div>
+    </div>
+    <div class="schedule-actions">
+      <a class="button" href="/admin/schedules/{{ s.id }}">Bearbeiten</a>
+      <form method="post" action="/admin/schedules/{{ s.id }}/toggle"><button>{{ 'Deaktivieren' if s.enabled else 'Aktivieren' }}</button></form>
+      <form method="post" action="/admin/schedules/{{ s.id }}/duplicate"><button>Duplizieren</button></form>
+      <form method="post" action="/admin/schedules/{{ s.id }}/delete" data-confirm="Zeitraum „{{ s.name }}“ wirklich löschen?"><button class="danger">Löschen</button></form>
+    </div>
+  </article>
+{% endfor %}
+</div>
+{% endblock %}

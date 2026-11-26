@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Anmelden{% endblock %}
+{% block content %}
+<form class="card login" method="post" action="/login">
+  <h1>Slideshow</h1>
+  <input type="hidden" name="next" value="{{ next }}">
+  <label>Passwort
+    <input type="password" name="password" autofocus required autocomplete="current-password">
+  </label>
+  <button class="primary">Anmelden</button>
+</form>
+{% endblock %}

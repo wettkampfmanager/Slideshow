@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Doku{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Dokumentation</h1></div>
+
+<div class="docs">
+<nav class="card docs-toc">
+  <strong>Inhalt</strong>
+  <ol>
+    <li><a href="#ueberblick">Überblick</a></li>
+    <li><a href="#pool">Bilder-Pool</a></li>
+    <li><a href="#zeitraeume">Zeiträume</a></li>
+    <li><a href="#wiederholung">Wiederholungsarten</a></li>
+    <li><a href="#reihenfolge">Reihenfolge und Überschneidungen</a></li>
+    <li><a href="#schliesszeit">Schließzeiten</a></li>
+    <li><a href="#vorschau">Vorschau</a></li>
+    <li><a href="#player">Player (Bildschirm)</a></li>
+    <li><a href="#einstellungen">Einstellungen</a></li>
+    <li><a href="#faq">Häufige Fragen</a></li>
+  </ol>
+</nav>
+
+<article class="card docs-body">
+
+<section id="ueberblick">
+  <h2>1. Überblick</h2>
+  <p>Die Slideshow zeigt auf einem Bildschirm Bilder, abhängig von Datum und Uhrzeit.
+     Sie besteht aus drei Teilen:</p>
+  <ul>
+    <li><strong>Bilder-Pool</strong>: alle Bilder, die zur Verfügung stehen.</li>
+    <li><strong>Zeiträume</strong>: legen fest, <em>wann</em> <em>welche</em> Bilder in welcher Reihenfolge laufen.</li>
+    <li><strong>Player</strong>: die Vollbildanzeige auf dem Bildschirm. Er holt sich die passenden Bilder automatisch.</li>
+  </ul>
+  <p>Änderungen in der Verwaltung erscheinen ohne Neustart auf dem Bildschirm, spätestens nach etwa 15 Sekunden
+     und dem gerade laufenden Bild.</p>
+  <p>Die Verwaltung ist von jedem Gerät im selben Netz erreichbar, z. B. unter
+     <code>{{ request.url.scheme }}://{{ request.url.netloc }}/admin</code>.</p>
+</section>
+
+<section id="pool">
+  <h2>2. Bilder-Pool</h2>
+  <h3>Bilder hinzufügen</h3>
+  <ul>
+    <li>Unter <a href="/admin/pool">Bilder-Pool</a> Dateien in das gestrichelte Feld ziehen oder auf „auswählen“ klicken.
+        Der Upload startet sofort, jede Datei zeigt ihren Fortschritt.</li>
+    <li>Erlaubt sind JPG, PNG, WebP, GIF und BMP. Große Fotos werden automatisch auf Bildschirmgröße verkleinert;
+        das Original bleibt erhalten.</li>
+    <li><strong>Doppelte Bilder</strong> werden am Inhalt erkannt (auch unter anderem Namen) und übersprungen.
+        Mit „Trotzdem hochladen“ kann man sie bewusst doch hinzufügen.</li>
+    <li>Gibt es schon ein <em>anderes</em> Bild mit gleichem Namen, wird der neue Name automatisch ergänzt, z. B. <code>foto-1.jpg</code>.</li>
+    <li>Bilder können auch direkt in den Pool-Ordner auf dem Gerät kopiert werden (Netzwerkfreigabe, USB). Sie erscheinen dann automatisch.</li>
+  </ul>
+  <h3>Großansicht, Umbenennen, Standardbild</h3>
+  <p>Ein Klick auf ein Vorschaubild öffnet die Großansicht mit Auflösung, Dateigröße und den Zeiträumen, die das Bild verwenden.
+     Mit ‹ › bzw. den Pfeiltasten blättern, mit Esc schließen.</p>
+  <ul>
+    <li><strong>Umbenennen</strong>: Die Endung darf weggelassen werden. Zuordnungen zu Zeiträumen bleiben erhalten.</li>
+    <li><strong>Als Standardbild</strong>: wird gezeigt, wenn gerade kein Zeitraum aktiv ist (siehe <a href="#reihenfolge">Abschnitt 5</a>).</li>
+  </ul>
+  <h3>Löschen</h3>
+  <p>Einzelne Bilder in der Großansicht löschen, mehrere über die Kästchen auswählen und „Auswahl löschen“.
+     Die Rückfrage nennt die Zeiträume, aus denen das Bild mit entfernt wird. <strong>Gelöschte Bilder sind endgültig weg.</strong></p>
+</section>
+
+<section id="zeitraeume">
+  <h2>3. Zeiträume</h2>
+  <p>Ein Zeitraum besteht aus einer <strong>Zeitregel</strong> (wann?) und einer <strong>Bilderliste</strong> (was?).</p>
+  <ol>
+    <li>Unter <a href="/admin">Zeiträume</a> auf „+ Neuer Zeitraum“ klicken.</li>
+    <li>Name, Priorität und Wiederholung wählen, Uhrzeit eintragen, „Anlegen und Bilder wählen“.</li>
+    <li>Unten aus dem Pool die gewünschten Bilder ankreuzen und „Ausgewählte hinzufügen“.</li>
+    <li>Reihenfolge per Ziehen (⋮⋮) oder mit ▲▼ ändern. Wird sofort gespeichert.</li>
+    <li>Anzeigedauer je Bild in Sekunden eintragen; leer = Standarddauer aus den <a href="/admin/settings">Einstellungen</a>.</li>
+  </ol>
+  <p>Nach dem Speichern zeigt das Formular eine Zusammenfassung, z. B. „Jeden 1. Montag im Monat, 10:00–15:00“,
+     und die <strong>nächsten Termine</strong>. So lässt sich prüfen, ob die Regel stimmt.</p>
+  <p>In der Liste kann ein Zeitraum <strong>deaktiviert</strong> (bleibt erhalten, läuft aber nicht),
+     <strong>dupliziert</strong> (Kopie inkl. Bilder, zunächst deaktiviert) oder <strong>gelöscht</strong> werden.</p>
+  <h3>Uhrzeit</h3>
+  <ul>
+    <li>Die Endminute zählt mit: 12:00–13:45 läuft bis 13:45:59. „Ganztägig“ setzt 00:00–23:59.</li>
+    <li>Liegt „bis“ vor „von“ (z. B. 22:00–02:00), läuft der Zeitraum über Mitternacht bis zum Folgetag.</li>
+    <li>Optional lässt sich die Gültigkeit auf einen Datumsbereich einschränken („gültig ab / bis“).</li>
+  </ul>
+</section>
+
+<section id="wiederholung">
+  <h2>4. Wiederholungsarten</h2>
+  <table class="docs-table">
+    <tr><th>Art</th><th>Bedeutung</th><th>Beispiel</th></tr>
+    <tr><td>Täglich</td><td>jeden Tag</td><td>täglich 12:00–13:45</td></tr>
+    <tr><td>Wöchentlich</td><td>an gewählten Wochentagen (Schnellwahl Mo–Fr, Sa+So)</td><td>immer montags, ganztägig</td></tr>
+    <tr><td>Monatlich (n-ter Wochentag)</td><td>1., 2., 3., 4., 5., vorletzter oder letzter Wochentag im Monat; mehrere wählbar</td><td>jeden 1. Montag 10:00–15:00; jeden 1. und 3. Freitag</td></tr>
+    <tr><td>Monatlich (fester Tag)</td><td>an einem Kalendertag; 29–31 fallen in kürzeren Monaten auf den Monatsletzten</td><td>jeden 15. des Monats</td></tr>
+    <tr><td>Einmalig</td><td>an einem bestimmten Datum</td><td>am 31.12.2026, 18:00–23:59</td></tr>
+    <tr><td>Zeitspanne</td><td>von Datum+Uhrzeit bis Datum+Uhrzeit, auch über viele Tage</td><td>23.12. 14:00 bis 02.01. 08:00</td></tr>
+  </table>
+  <p class="muted small">„Vorletzter“ und „letzter“ zählen vom Monatsende. Einen 5. Wochentag gibt es nur in manchen Monaten.</p>
+</section>
+
+<section id="reihenfolge">
+  <h2>5. Reihenfolge und Überschneidungen</h2>
+  <ul>
+    <li>Sind mehrere Zeiträume gleichzeitig aktiv, laufen <strong>alle</strong> ihre Bilder, und zwar
+        <strong>blockweise nach Priorität</strong>: erst alle Bilder des Zeitraums mit der kleinsten Prioritätszahl,
+        dann der nächste usw. Bei gleicher Priorität entscheidet der Name.</li>
+    <li>Innerhalb eines Blocks gilt die im Zeitraum festgelegte Reihenfolge.</li>
+    <li>Ist ein Bild in mehreren aktiven Zeiträumen, erscheint es in jedem Block, also mehrfach.</li>
+    <li>Danach beginnt die Schleife von vorn.</li>
+    <li>Ist <strong>kein</strong> Zeitraum aktiv, erscheint das <strong>Standardbild</strong>; ist keins gesetzt, bleibt der Bildschirm schwarz.</li>
+  </ul>
+</section>
+
+<section id="schliesszeit">
+  <h2>6. Schließzeiten</h2>
+  <p>Jeder Zeitraum kann im Formular als <strong>Schließzeit</strong> markiert werden (rot hervorgehoben).</p>
+  <ul>
+    <li>Solange eine Schließzeit aktiv ist, werden <strong>alle normalen Zeiträume ignoriert</strong>.</li>
+    <li>Es laufen nur die Bilder der Schließzeit, z. B. „Wir haben geschlossen“.
+        Hat sie keine Bilder, bleibt der Bildschirm <strong>schwarz</strong> (auch das Standardbild erscheint nicht).</li>
+    <li>Mehrere Schließzeiten sind möglich; überschneiden sie sich, laufen sie blockweise nach Priorität.</li>
+    <li>Für Ferien o. Ä. die Art <em>Zeitspanne</em> verwenden; für wiederkehrende Schließzeiten
+        (z. B. jeden Sonntag) jede andere Art.</li>
+  </ul>
+</section>
+
+<section id="vorschau">
+  <h2>7. Vorschau</h2>
+  <p>Die <a href="/admin/preview">Vorschau</a> zeigt, was zu einem beliebigen Zeitpunkt laufen würde.</p>
+  <ul>
+    <li>Die <strong>Zeitleiste</strong> zeigt pro Zeitraum als Balken, wann er am gewählten Tag aktiv ist
+        (Schließzeiten rot, durch eine Schließzeit unterdrückte Zeiträume durchgestrichen).</li>
+    <li>Die rote Markierung mit Maus oder Finger verschieben; darunter erscheint sofort die passende Playlist.
+        Tastatur: ← → 1 Minute, Umschalt+← → 15 Minuten, Bild↑/↓ 1 Stunde.</li>
+    <li><strong>⇤ ⇥</strong> springen zum vorherigen/nächsten Wechsel, auch über Tagesgrenzen hinweg (bis zu 400 Tage).</li>
+    <li><strong>‹ ›</strong> wechseln den Tag, „Jetzt“ springt zur aktuellen Zeit.</li>
+  </ul>
+</section>
+
+<section id="player">
+  <h2>8. Player (Bildschirm)</h2>
+  <ul>
+    <li>Adresse: <a href="/player" target="_blank" rel="noopener"><code>{{ request.url.scheme }}://{{ request.url.netloc }}/player</code></a>.
+        Auf dem Raspberry Pi startet er nach dem Einschalten automatisch im Vollbild.</li>
+    <li>In einem normalen Browser: <strong>Doppelklick</strong> oder Taste <strong>F</strong> schaltet Vollbild ein/aus.</li>
+    <li>Ist der Server kurz nicht erreichbar, läuft die zuletzt bekannte Playlist weiter.</li>
+    <li>Solange noch keine Bilder oder Zeiträume angelegt sind, zeigt der Player einen Hinweis mit der Adresse der Verwaltung.</li>
+  </ul>
+</section>
+
+<section id="einstellungen">
+  <h2>9. Einstellungen</h2>
+  <table class="docs-table">
+    <tr><th>Einstellung</th><th>Bedeutung</th></tr>
+    <tr><td>Standard-Anzeigedauer</td><td>Sekunden je Bild, wenn im Zeitraum keine eigene Dauer eingetragen ist (Standard 30 s).</td></tr>
+    <tr><td>Überblendung</td><td>Dauer des Übergangs in Millisekunden; 0 = harter Schnitt (schont schwache Geräte).</td></tr>
+    <tr><td>Bilddarstellung</td><td>„Ganzes Bild“ (ggf. schwarze Ränder) oder „Bildschirm füllen“ (Ränder werden abgeschnitten).</td></tr>
+    <tr><td>Standardbild</td><td>Wird gezeigt, wenn kein Zeitraum aktiv ist.</td></tr>
+    <tr><td>Bildschirmbreite/-höhe</td><td>Auf diese Größe werden die Bilder vorberechnet. Nach einer Änderung werden alle Bilder
+        im Hintergrund neu berechnet; der Player übernimmt sie beim nächsten Bildwechsel.</td></tr>
+    <tr><td>Passwort</td><td>Zugang zur Verwaltung. Das Standardpasswort sollte sofort geändert werden.</td></tr>
+  </table>
+</section>
+
+<section id="faq">
+  <h2>10. Häufige Fragen</h2>
+  <dl class="docs-faq">
+    <dt>Ein Zeitraum läuft an Tagen, an denen er nicht laufen soll.</dt>
+    <dd>Meist ist die Wiederholung noch auf „Täglich“ eingestellt. Im Formular die Zusammenfassung und die nächsten
+        Termine prüfen oder in der Vorschau die Zeitleiste ansehen. Der Name des Zeitraums hat keine Wirkung.</dd>
+    <dt>Der Bildschirm ist schwarz.</dt>
+    <dd>Entweder ist gerade kein Zeitraum aktiv und kein Standardbild gesetzt, eine Schließzeit ohne Bilder ist aktiv,
+        oder der aktive Zeitraum hat keine Bilder. Die <a href="/admin/preview">Vorschau</a> zeigt den Grund.</dd>
+    <dt>Eine Änderung ist auf dem Bildschirm noch nicht zu sehen.</dt>
+    <dd>Der Player übernimmt Änderungen beim nächsten Bildwechsel, spätestens nach ca. 15 Sekunden plus der Restdauer des aktuellen Bildes.</dd>
+    <dt>Die Verwaltung ist von einem anderen Rechner nicht erreichbar.</dt>
+    <dd>Adresse mit Port verwenden (z. B. <code>:8000</code>) und prüfen, ob eine Firewall den Port blockiert.</dd>
+    <dt>Die Uhrzeit stimmt nicht.</dt>
+    <dd>Der Raspberry Pi hat keine eingebaute Uhr und holt die Zeit aus dem Netz. Netzwerkverbindung und Zeitzone prüfen.</dd>
+  </dl>
+</section>
+
+</article>
+</div>
+{% endblock %}

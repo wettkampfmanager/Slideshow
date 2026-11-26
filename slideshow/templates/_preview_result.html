@@ -1,0 +1,21 @@
+<h2>{{ when|dt(long=True) }}</h2>
+{% if pl.closed %}
+  <p><span class="badge closed">Schließzeit</span>
+  {% if pl.slides %}Alle normalen Zeiträume sind ausgeblendet, es laufen nur die Bilder der Schließzeit ({{ pl.slides|length|bilder }}, Durchlauf {{ pl.total_seconds|mmss }}).
+  {% else %}Alle Zeiträume sind ausgeblendet, die Schließzeit hat keine Bilder, der Bildschirm bleibt <strong>schwarz</strong>.{% endif %}</p>
+{% elif pl.fallback %}
+  <p>{% if pl.slides %}Kein Zeitraum aktiv, das <strong>Standardbild</strong> wird gezeigt.{% else %}Kein Zeitraum aktiv und kein Standardbild gesetzt, der Bildschirm bleibt <strong>schwarz</strong>.{% endif %}</p>
+{% else %}
+  {% set n = pl.blocks|selectattr('slides')|list|length %}
+  <p>{{ n }} aktive{{ 'r Zeitraum' if n == 1 else ' Zeiträume' }}, {{ pl.slides|length|bilder }}, ein Durchlauf dauert {{ pl.total_seconds|mmss }}. Danach beginnt die Schleife von vorn.</p>
+{% endif %}
+{% for b in pl.blocks %}
+  <h3>{% if b.schedule_id %}<a href="/admin/schedules/{{ b.schedule_id }}">{{ b.name }}</a> <span class="muted small">Priorität {{ b.priority }}</span>{% else %}{{ b.name }}{% endif %}</h3>
+  {% if b.slides %}
+  <div class="pool-grid">
+    {% for sl in b.slides %}
+    <div class="pool-item"><img src="{{ thumb_url(sl.filename) }}" alt=""><span>{{ loop.index }}. {{ sl.filename }}</span><span class="muted small">{{ sl.duration }} s{{ '' if sl.custom_duration else ' (Standard)' }}</span></div>
+    {% endfor %}
+  </div>
+  {% elif not pl.closed %}<p class="muted">aktiv, aber ohne Bilder</p>{% endif %}
+{% endfor %}

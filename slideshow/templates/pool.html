@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Bilder-Pool{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Bilder-Pool</h1><span class="muted">{{ images|length|bilder }}</span></div>
+
+<form class="card dropzone" method="post" action="/admin/pool/upload" enctype="multipart/form-data" id="upload-form">
+  <label class="drop">
+    <input type="file" name="files" multiple accept="image/*" id="upload-input">
+    <span class="drop-text">Bilder hierher ziehen oder <u>auswählen</u></span>
+    <span class="muted small">JPG, PNG, WebP, GIF, BMP. Große Fotos werden automatisch auf Bildschirmgröße verkleinert. Bereits vorhandene Bilder werden erkannt und übersprungen.</span>
+  </label>
+  <noscript><button class="primary">Hochladen</button></noscript>
+</form>
+
+<section class="card upload-list" id="upload-list" hidden>
+  <div class="pagehead">
+    <h2>Upload</h2>
+    <span class="muted" id="upload-summary"></span>
+  </div>
+  <ul id="upload-items"></ul>
+  <div class="actions" id="upload-done" hidden><button class="primary" type="button" id="upload-reload">Fertig</button></div>
+</section>
+
+<p class="muted small">Bilder können auch direkt in den Ordner <code>{{ pool_dir }}</code> kopiert werden (z. B. per Netzwerkfreigabe oder USB). Sie erscheinen dann hier automatisch.</p>
+
+{% if images %}
+<form method="post" action="/admin/pool/delete" id="bulk-form">
+  <div class="row toolbar">
+    <input type="search" placeholder="Filtern …" class="pool-filter">
+    <button type="button" data-select="all">Alle auswählen</button>
+    <button type="button" data-select="none">Keine</button>
+    <button class="danger" id="bulk-delete" disabled>Auswahl löschen (<span class="sel-count">0</span>)</button>
+  </div>
+  <div class="pool-grid large">
+  {% for img in images %}
+    <div class="pool-item card selectable" data-name="{{ img.name|lower }}" data-file="{{ img.name }}"
+         data-users="{{ img.users|map(attribute='name')|join('\n') }}">
+      <input type="checkbox" name="name" value="{{ img.name }}" aria-label="{{ img.name }} auswählen">
+      <button type="button" class="open-viewer" title="Großansicht">
+        <img src="{{ thumb_url(img.name) }}" alt="" loading="lazy">
+      </button>
+      <span class="fname" title="{{ img.name }}">{{ img.name }}</span>
+      <span class="muted small">
+        {% if img.users|length == 1 %}in 1 Zeitraum{% elif img.users %}in {{ img.users|length }} Zeiträumen{% else %}nicht verwendet{% endif %}
+        {% if img.is_default %} · <span class="badge live">Standardbild</span>{% endif %}
+      </span>
+    </div>
+  {% endfor %}
+  </div>
+</form>
+{% else %}
+<p class="empty">Noch keine Bilder im Pool.</p>
+{% endif %}
+
+<dialog id="viewer">
+  <div class="viewer-body">
+    <div class="viewer-image">
+      <button type="button" class="nav prev" data-step="-1" title="Vorheriges (←)">‹</button>
+      <img alt="">
+      <button type="button" class="nav next" data-step="1" title="Nächstes (→)">›</button>
+    </div>
+    <aside class="viewer-info">
+      <button type="button" class="close linklike" title="Schließen (Esc)">✕</button>
+      <h2 class="v-name"></h2>
+      <dl>
+        <dt>Auflösung</dt><dd class="v-res"></dd>
+        <dt>Dateigröße</dt><dd class="v-size"></dd>
+        <dt>Geändert</dt><dd class="v-date"></dd>
+        <dt>Verwendet in</dt><dd class="v-users"></dd>
+      </dl>
+      <form method="post" action="/admin/pool/rename" class="v-rename">
+        <input type="hidden" name="name">
+        <label>Umbenennen <input name="new_name" required></label>
+        <button>Umbenennen</button>
+      </form>
+      <div class="row">
+        <form method="post" action="/admin/pool/default" class="v-default">
+          <input type="hidden" name="name"><button>Als Standardbild</button>
+        </form>
+        <form method="post" action="/admin/pool/delete" class="v-delete">
+          <input type="hidden" name="name"><button class="danger">Löschen</button>
+        </form>
+      </div>
+    </aside>
+  </div>
+</dialog>
+{% endblock %}
+{% block scripts %}<script src="/static/pool.js"></script>{% endblock %}

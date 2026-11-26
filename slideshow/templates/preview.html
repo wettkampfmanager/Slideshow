@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Vorschau{% endblock %}
+{% block content %}
+{% set day = when.strftime('%Y-%m-%d') %}
+{% set hm = when.strftime('%H:%M') %}
+<div class="pagehead"><h1>Vorschau</h1></div>
+
+<section class="card" id="timeline" data-date="{{ day }}" data-minute="{{ when.hour * 60 + when.minute }}">
+  <div class="tl-head">
+    <a class="button day-link" data-day="{{ prev_day.strftime('%Y-%m-%d') }}" href="/admin/preview?at={{ prev_day.strftime('%Y-%m-%d') }}T{{ hm }}" title="Vorheriger Tag">‹</a>
+    <form method="get" action="/admin/preview" id="tl-date-form">
+      <input type="date" id="tl-date" value="{{ day }}" aria-label="Datum">
+      <input type="hidden" name="at" value="{{ day }}T{{ hm }}">
+      <noscript><button>Anzeigen</button></noscript>
+    </form>
+    <a class="button day-link" data-day="{{ next_day.strftime('%Y-%m-%d') }}" href="/admin/preview?at={{ next_day.strftime('%Y-%m-%d') }}T{{ hm }}" title="Nächster Tag">›</a>
+    <a class="button" href="/admin/preview">Jetzt</a>
+    <div class="tl-clock">
+      <button type="button" id="tl-prev-change" title="Zum vorherigen Wechsel springen">⇤</button>
+      <strong id="tl-time">{{ hm }}</strong>
+      <button type="button" id="tl-next-change" title="Zum nächsten Wechsel springen">⇥</button>
+    </div>
+  </div>
+
+  {% if timeline %}
+  <div class="tl-body">
+    <div class="tl-labels">
+      {% for r in timeline %}
+      <div class="tl-label {{ 'closure' if r.exclusive }}" title="{{ r.description }}">
+        <a href="/admin/schedules/{{ r.id }}">{{ r.name }}</a>
+        <span class="muted small">{% if r.exclusive %}Schließzeit · {% endif %}{{ r.description }}{% if not r.slides %} · ohne Bilder{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="tl-tracks" id="tl-scrub" tabindex="0" role="slider" aria-label="Uhrzeit"
+         aria-valuemin="0" aria-valuemax="1439" aria-valuenow="{{ when.hour * 60 + when.minute }}" aria-valuetext="{{ hm }}">
+      {% for r in timeline %}
+      <div class="tl-track {{ 'closure' if r.exclusive }}" data-segments="{{ r.segments|tojson }}">
+        {% for a, b in r.segments %}
+        <span class="tl-bar" style="left: {{ a / 14.4 }}%; width: {{ (b - a + 1) / 14.4 }}%"></span>
+        {% endfor %}
+      </div>
+      {% endfor %}
+      <div class="tl-axis">
+        {% for h in range(0, 25, 3) %}<span style="left: {{ h / 24 * 100 }}%">{{ h }}:00</span>{% endfor %}
+      </div>
+      <div class="tl-cursor"></div>
+    </div>
+  </div>
+  <p class="muted small">Zum Verschieben auf die Zeitleiste klicken oder ziehen. Mit der Tastatur: ← → eine Minute, Umschalt+← → 15 Minuten, Bild↑/↓ eine Stunde.</p>
+  {% else %}
+  <p class="empty">Keine aktivierten Zeiträume.</p>
+  {% endif %}
+</section>
+
+<section class="card" id="preview-result">
+  {% include "_preview_result.html" %}
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/preview.js"></script>{% endblock %}

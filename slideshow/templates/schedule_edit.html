@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}{{ s.name or 'Neuer Zeitraum' }}{% endblock %}
+{% block content %}
+{% set wd = (s.weekdays or '')|string %}
+{% set wdl = wd.split(',') %}
+{% set nl = ((s.nths or '')|string).split(',') %}
+<div class="pagehead">
+  <h1>{{ s.name if s.id else 'Neuer Zeitraum' }}</h1>
+  <a href="/admin">← Alle Zeiträume</a>
+</div>
+
+{% for e in errors %}<div class="flash error">{{ e }}</div>{% endfor %}
+
+<form class="card" method="post" action="{{ '/admin/schedules/%d' % s.id if s.id else '/admin/schedules/new' }}" id="schedule-form">
+  <div class="grid2">
+    <label>Name
+      <input name="name" value="{{ s.name }}" required placeholder="z. B. Mittagspause">
+    </label>
+    <label>Priorität <span class="muted small">(kleinere Zahl wird zuerst gezeigt)</span>
+      <input type="number" name="priority" value="{{ s.priority }}" min="-999" max="999">
+    </label>
+  </div>
+
+  <label>Wiederholung
+    <select name="kind" id="kind">
+      {% for key, label in KINDS.items() %}<option value="{{ key }}" {{ 'selected' if s.kind == key }}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+
+  <fieldset data-kinds="monthly_nth">
+    <legend>Der wievielte im Monat</legend>
+    {% for n, label in NTHS.items() %}
+      <label class="chip"><input type="checkbox" name="nths" value="{{ n }}" {{ 'checked' if n|string in nl }}> {{ label }}</label>
+    {% endfor %}
+  </fieldset>
+
+  <fieldset data-kinds="weekly monthly_nth">
+    <legend>Wochentag(e)</legend>
+    {% for i in range(7) %}
+      <label class="chip"><input type="checkbox" name="weekdays" value="{{ i }}" {{ 'checked' if i|string in wdl }}> {{ WEEKDAYS_SHORT[i] }}</label>
+    {% endfor %}
+    <span class="quick" data-kinds="weekly">
+      <button type="button" data-days="0,1,2,3,4">Mo–Fr</button>
+      <button type="button" data-days="5,6">Sa+So</button>
+    </span>
+  </fieldset>
+
+  <fieldset data-kinds="monthly_day">
+    <legend>Tag im Monat</legend>
+    <input type="number" name="monthday" min="1" max="31" value="{{ s.monthday or '' }}">
+    <span class="muted small">29–31: in kürzeren Monaten am Monatsletzten</span>
+  </fieldset>
+
+  <fieldset data-kinds="once">
+    <legend>Datum</legend>
+    <input type="date" name="on_date" value="{{ s.on_date or '' }}" required>
+  </fieldset>
+
+  <fieldset data-kinds="period">
+    <legend>Zeitspanne</legend>
+    <div class="row">
+      <label>von <input type="datetime-local" name="period_start" required
+        value="{{ (s.on_date ~ 'T' ~ s.start_time) if s.kind == 'period' and s.on_date else '' }}"></label>
+      <label>bis <input type="datetime-local" name="period_end" required
+        value="{{ (s.end_date ~ 'T' ~ s.end_time) if s.kind == 'period' and s.end_date else '' }}"></label>
+    </div>
+    <p class="muted small">Darf über beliebig viele Tage gehen, z. B. 23.12. 14:00 bis 02.01. 08:00. Die Endminute zählt mit.</p>
+  </fieldset>
+
+  <fieldset data-kinds="daily weekly monthly_nth monthly_day once">
+    <legend>Uhrzeit</legend>
+    <div class="row">
+      <label>von <input type="time" name="start_time" id="start_time" value="{{ s.start_time }}" required></label>
+      <label>bis <input type="time" name="end_time" id="end_time" value="{{ s.end_time }}" required></label>
+      <button type="button" id="allday">Ganztägig</button>
+    </div>
+    <p class="muted small">Die Endminute zählt mit (23:59 = bis Tagesende). Liegt „bis“ vor „von“, läuft der Zeitraum über Mitternacht.</p>
+  </fieldset>
+
+  <details data-kinds="daily weekly monthly_nth monthly_day once" {{ 'open' if s.valid_from or s.valid_until }}>
+    <summary>Gültigkeit einschränken (optional)</summary>
+    <div class="row">
+      <label>gültig ab <input type="date" name="valid_from" value="{{ s.valid_from or '' }}"></label>
+      <label>gültig bis <input type="date" name="valid_until" value="{{ s.valid_until or '' }}"></label>
+    </div>
+  </details>
+
+  <label class="closure-toggle">
+    <input type="checkbox" name="exclusive" value="1" {{ 'checked' if s.exclusive }}>
+    <span><strong>Schließzeit</strong><br>
+      <span class="muted small">Solange dieser Zeitraum aktiv ist, werden alle normalen Zeiträume ignoriert.
+      Es laufen nur die Bilder der Schließzeit(en); ohne Bilder bleibt der Bildschirm schwarz.</span></span>
+  </label>
+
+  <label class="inline"><input type="checkbox" name="enabled" value="1" {{ 'checked' if s.enabled }}> aktiviert</label>
+
+  {% if s.id and description %}
+  <p class="summary"><strong>{{ description }}</strong><br>
+    <span class="muted small">Nächste Termine:
+    {% for d in upcoming %}{{ d|dt }}{{ ', ' if not loop.last }}{% else %}keine{% endfor %}</span></p>
+  {% endif %}
+
+  <div class="actions"><button class="primary">{{ 'Speichern' if s.id else 'Anlegen und Bilder wählen' }}</button></div>
+</form>
+
+{% if s.id %}
+<section class="card" id="bilder">
+  <div class="pagehead">
+    <h2>Bilder in diesem Zeitraum</h2>
+    <span class="muted">{{ slides|length|bilder }} · Durchlauf <span id="total" data-default="{{ default_duration }}">{{ total|mmss }}</span></span>
+  </div>
+  {% if slides %}
+  <p class="muted small">Zum Umsortieren ziehen oder ▲▼ benutzen. Leere Dauer = Standard ({{ default_duration }} s). Änderungen werden sofort gespeichert.</p>
+  <ol class="slides" id="slides" data-schedule="{{ s.id }}">
+    {% for sl in slides %}
+    <li draggable="true" data-id="{{ sl.id }}" class="{{ 'missing' if sl.filename in missing }}">
+      <span class="handle" title="Ziehen zum Verschieben">⋮⋮</span>
+      {% if sl.filename in missing %}<span class="thumb missing-thumb">fehlt</span>{% else %}<img class="thumb" src="{{ thumb_url(sl.filename) }}" alt="" loading="lazy">{% endif %}
+      <span class="fname" title="{{ sl.filename }}">{{ sl.filename }}</span>
+      <label class="dur"><input type="number" min="1" max="3600" placeholder="{{ default_duration }}" value="{{ sl.duration or '' }}" data-slide="{{ sl.id }}"> s</label>
+      <span class="move"><button type="button" data-move="-1" title="nach oben">▲</button><button type="button" data-move="1" title="nach unten">▼</button></span>
+      <form method="post" action="/admin/slides/{{ sl.id }}/delete"><button class="danger" title="Aus diesem Zeitraum entfernen">✕</button></form>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="empty">Noch keine Bilder. Unten aus dem Pool auswählen.</p>
+  {% endif %}
+</section>
+
+<section class="card">
+  <div class="pagehead">
+    <h2>Aus dem Pool hinzufügen</h2>
+    <a href="/admin/pool">Pool verwalten / hochladen →</a>
+  </div>
+  {% if pool %}
+  <form method="post" action="/admin/schedules/{{ s.id }}/slides/add" class="picker">
+    <div class="row">
+      <input type="search" placeholder="Filtern …" class="pool-filter">
+      <button type="button" data-select="all">Alle</button>
+      <button type="button" data-select="none">Keine</button>
+      <button class="primary" type="submit">Ausgewählte hinzufügen (<span class="sel-count">0</span>)</button>
+    </div>
+    <div class="pool-grid">
+      {% for name in pool %}
+      <label class="pool-item" data-name="{{ name|lower }}">
+        <input type="checkbox" name="filenames" value="{{ name }}">
+        <img src="{{ thumb_url(name) }}" alt="" loading="lazy">
+        <span>{{ name }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </form>
+  {% else %}
+  <p class="empty">Der Pool ist leer. <a href="/admin/pool">Bilder hochladen</a></p>
+  {% endif %}
+</section>
+
+<form method="post" action="/admin/schedules/{{ s.id }}/delete" data-confirm="Zeitraum „{{ s.name }}“ wirklich löschen?" class="danger-zone">
+  <button class="danger">Zeitraum löschen</button>
+</form>
+{% endif %}
+{% endblock %}

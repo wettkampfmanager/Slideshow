@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen{% endblock %}
+{% block content %}
+<div class="pagehead"><h1>Einstellungen</h1></div>
+<form class="card" method="post" action="/admin/settings">
+  <div class="grid2">
+    <label>Standard-Anzeigedauer (Sekunden)
+      <input type="number" name="default_duration" min="1" max="3600" value="{{ settings.default_duration }}">
+    </label>
+    <label>Überblendung (Millisekunden, 0 = aus)
+      <input type="number" name="transition_ms" min="0" max="5000" step="100" value="{{ settings.transition_ms }}">
+    </label>
+    <label>Bilddarstellung
+      <select name="fit">
+        <option value="contain" {{ 'selected' if settings.fit == 'contain' }}>Ganzes Bild zeigen (ggf. schwarze Ränder)</option>
+        <option value="cover" {{ 'selected' if settings.fit == 'cover' }}>Bildschirm füllen (Ränder werden abgeschnitten)</option>
+      </select>
+    </label>
+    <label>Standardbild (wenn kein Zeitraum aktiv ist)
+      <select name="default_image">
+        <option value="">kein Bild, schwarzer Bildschirm</option>
+        {% for name in pool %}<option value="{{ name }}" {{ 'selected' if settings.default_image == name }}>{{ name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Bildschirmbreite (px)
+      <input type="number" name="display_width" min="320" max="3840" value="{{ settings.display_width }}">
+    </label>
+    <label>Bildschirmhöhe (px)
+      <input type="number" name="display_height" min="240" max="2160" value="{{ settings.display_height }}">
+    </label>
+  </div>
+  <p class="muted small">Auf dem Pi 3 empfiehlt sich höchstens 1920 × 1080. Bilder werden auf diese Größe vorberechnet.</p>
+  <div class="actions"><button class="primary">Speichern</button></div>
+</form>
+
+<form class="card" method="post" action="/admin/password" id="password">
+  <h2>Passwort ändern</h2>
+  <div class="grid2">
+    <label>Aktuelles Passwort <input type="password" name="current" required autocomplete="current-password"></label>
+    <span></span>
+    <label>Neues Passwort <input type="password" name="new" required minlength="6" autocomplete="new-password"></label>
+    <label>Wiederholen <input type="password" name="repeat" required minlength="6" autocomplete="new-password"></label>
+  </div>
+  <div class="actions"><button class="primary">Passwort ändern</button></div>
+</form>
+{% endblock %}
