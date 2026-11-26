@@ -1,0 +1,16 @@
+# dependencies / builds
+node_modules/
+dist/
+build/
+.venv/
+venv/
+__pycache__/
+# local settings, secrets
+.env
+.env.*
+*.local
+# editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
